@@ -8,11 +8,8 @@ numpy
 opencv-python
 supervision
 pycocotools
-PIL
-os
+Pillow
 language_tool_python
-random
-csv
 typing
-cv2
+opencv-python
 tqdm
