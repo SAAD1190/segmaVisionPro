@@ -71,7 +71,8 @@ class PromptGenerator:
                     num_beams=1,
                     do_sample=True,
                     top_k=50,
-                    temperature=1.0
+                    temperature=1.0,
+                    attention_mask=torch.ones_like(pixel_values)  # Adding attention_mask
                 )
                 pred = self.processors["blip"].decode(output_ids[0], skip_special_tokens=True).strip()
                 prompts.append(pred)
@@ -90,7 +91,8 @@ class PromptGenerator:
                     num_beams=1,
                     do_sample=True,
                     top_k=50,
-                    temperature=1.0
+                    temperature=1.0,
+                    attention_mask=torch.ones_like(pixel_values)  # Adding attention_mask
                 )
                 pred = self.tokenizers["vit_gpt2"].decode(output_ids[0], skip_special_tokens=True).strip()
                 prompts.append(pred)
@@ -110,7 +112,8 @@ class PromptGenerator:
                     num_beams=1,
                     do_sample=True,
                     top_k=50,
-                    temperature=1.0
+                    temperature=1.0,
+                    attention_mask=torch.ones_like(pixel_values)  # Adding attention_mask
                 )
                 pred = self.tokenizers["vilt"].decode(output_ids[0], skip_special_tokens=True).strip()
                 prompts.append(pred)
