@@ -1,4 +1,4 @@
-from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer, BlipForConditionalGeneration, BlipProcessor
+from transformers import VisionEncoderDecoderModel, ViTImageProcessor, AutoTokenizer, BlipForConditionalGeneration, BlipProcessor, ViltProcessor, ViltForImageAndTextRetrieval
 from PIL import Image
 import torch
 import os
@@ -8,7 +8,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class PromptGenerator:
     
     def __init__(self, image_directory="./data/", images_extensions=['jpg', 'jpeg', 'png'], models_to_use=None):
-        # Initialize available models (BLIP2 removed)
+        # Initialize available models (ViLT is now using the correct class)
         self.available_models = {
             "blip": self.generate_blip_prompts,
             "vit_gpt2": self.generate_vit_gpt2_prompts,
@@ -19,18 +19,18 @@ class PromptGenerator:
         # Set the models to use (if None, use all available models)
         self.models_to_use = models_to_use if models_to_use else list(self.available_models.keys())
         
-        # Initialize the processors and models only for selected ones (BLIP2 removed)
+        # Initialize the processors and models only for selected ones
         self.models = {
             "blip": BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device),
             "vit_gpt2": VisionEncoderDecoderModel.from_pretrained("nlpconnect/vit-gpt2-image-captioning").to(device),
-            "vilt": VisionEncoderDecoderModel.from_pretrained("dandelin/vilt-b32-finetuned-coco").to(device),
+            "vilt": ViltForImageAndTextRetrieval.from_pretrained("dandelin/vilt-b32-finetuned-coco").to(device),  # Correct class for ViLT
             "simvlm": VisionEncoderDecoderModel.from_pretrained("microsoft/SimVLM-base").to(device)
         }
         
         self.processors = {
             "blip": BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base"),
             "vit_gpt2": ViTImageProcessor.from_pretrained("nlpconnect/vit-gpt2-image-captioning"),
-            "vilt": ViTImageProcessor.from_pretrained("dandelin/vilt-b32-finetuned-coco"),
+            "vilt": ViltProcessor.from_pretrained("dandelin/vilt-b32-finetuned-coco"),  # Correct processor for ViLT
             "simvlm": ViTImageProcessor.from_pretrained("microsoft/SimVLM-base")
         }
 
@@ -104,7 +104,8 @@ class PromptGenerator:
     def generate_vilt_prompts(self, images, num_prompts, max_length):
         prompts_dict = {}
         for idx, image in enumerate(images):
-            pixel_values = self.processors["vilt"](images=image, return_tensors="pt").pixel_values.to(device)
+            inputs = self.processors["vilt"](images=image, return_tensors="pt").to(device)
+            pixel_values = inputs['pixel_values']
             prompts = []
             for _ in range(num_prompts):
                 output_ids = self.models["vilt"].generate(
@@ -155,7 +156,7 @@ class PromptGenerator:
         return final_prompt_pool
 
 # Example usage:
-# To use all models (except BLIP2, which has been removed):
+# To use all models:
 # prompt_gen = PromptGenerator(image_directory="./data/")
 # To use only selected models (e.g., 'blip' and 'vilt'):
 # prompt_gen = PromptGenerator(image_directory="./data/", models_to_use=['blip', 'vilt'])
