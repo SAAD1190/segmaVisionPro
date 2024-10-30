@@ -10,6 +10,5 @@ supervision
 pycocotools
 Pillow
 language_tool_python
-typing
 opencv-python
 tqdm
