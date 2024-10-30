@@ -8,7 +8,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class PromptGenerator:
     
     def __init__(self, image_directory="./data/", images_extensions=['jpg', 'jpeg', 'png'], models_to_use=None):
-        # Initialize available models (Vilt removed)
+        # Initialize available models
         self.available_models = {
             "blip": self.generate_blip_prompts,
             "vit_gpt2": self.generate_vit_gpt2_prompts
@@ -59,10 +59,12 @@ class PromptGenerator:
         for idx, image in enumerate(images):
             inputs = self.processors["blip"](images=image, return_tensors="pt").to(device)
             pixel_values = inputs['pixel_values']
+            attention_mask = torch.ones(pixel_values.shape[:-1], dtype=torch.long).to(device)  # Add attention mask
             prompts = []
             for _ in range(num_prompts):
                 output_ids = self.models["blip"].generate(
                     pixel_values,
+                    attention_mask=attention_mask,  # Pass attention mask
                     max_length=max_length,
                     num_beams=1,
                     do_sample=True,
@@ -78,23 +80,24 @@ class PromptGenerator:
         prompts_dict = {}
         for idx, image in enumerate(images):
             pixel_values = self.processors["vit_gpt2"](images=image, return_tensors="pt").pixel_values.to(device)
+            attention_mask = torch.ones(pixel_values.shape[:-1], dtype=torch.long).to(device)  # Add attention mask
             prompts = []
             for _ in range(num_prompts):
                 output_ids = self.models["vit_gpt2"].generate(
                     pixel_values,
+                    attention_mask=attention_mask,  # Pass attention mask
                     max_length=max_length,
                     num_beams=1,
                     do_sample=True,
                     top_k=50,
-                    temperature=1.0,
-                    attention_mask=torch.ones(pixel_values.shape[:-1], dtype=torch.long).to(device)  # Proper attention mask
+                    temperature=1.0
                 )
                 pred = self.tokenizers["vit_gpt2"].decode(output_ids[0], skip_special_tokens=True).strip()
                 prompts.append(pred)
             prompts_dict[idx] = prompts
         return prompts_dict
 
-    def generate_prompts(self, num_prompts=5, max_length=10):
+    def generate_prompts(self, num_prompts=5, max_length=15):
         images, image_names = self.load_images()
         final_prompt_pool = {}
 
@@ -112,5 +115,6 @@ class PromptGenerator:
 # Example usage:
 # To use all models (BLIP and ViT-GPT2):
 # prompt_gen = PromptGenerator(image_directory="./data/")
+# final_prompts = prompt_gen.generate_prompts(num_prompts=5)
 # To use only selected models (e.g., 'blip'):
 # prompt_gen = PromptGenerator(image_directory="./data/", models_to_use=['blip'])
