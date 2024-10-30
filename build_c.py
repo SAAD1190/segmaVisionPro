@@ -1,4 +1,3 @@
-# build_c.py
 import os
 import glob
 import torch
@@ -7,8 +6,11 @@ from setuptools import setup
 
 # Function to determine if CUDA is available and compile the extension
 def get_extensions():
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    extensions_dir = os.path.join(this_dir, "groundingdino", "models", "GroundingDINO", "csrc")
+    # Correct path to the C++/CUDA source files
+    extensions_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "GroundingSam", "groundingdino", "models", "GroundingDINO", "csrc"
+    )
 
     main_source = os.path.join(extensions_dir, "vision.cpp")
     sources = glob.glob(os.path.join(extensions_dir, "**", "*.cpp"))
